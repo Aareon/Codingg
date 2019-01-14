@@ -2,8 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from pathlib import Path
 
-from textarea import TextArea
-from linegutter import LineGutter
+from ui.textarea import TextArea
+from ui.linegutter import LineGutter
 
 SRC_PATH = Path(__file__).parent.parent
 RESOURCES_PATH = SRC_PATH.joinpath("./resources/")
@@ -27,7 +27,7 @@ class MainWindow(tk.Tk):
             undo=True
         )
 
-        # TODO : reimplement the ttk style for scrollbar to give us more control
+        # TODO : re-implement the ttk style for scrollbar to give us more control
         self.scrollbar = ttk.Scrollbar(
             orient="vertical",
             command=self.scroll_text
@@ -55,6 +55,10 @@ class MainWindow(tk.Tk):
             textvar=self.current_index
         )
 
+        # menu bar
+        self.menu = self.create_menu_bar()
+        self.configure(menu=self.menu)
+
         # do element packing
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
         self.status_bar_text.pack(side=tk.BOTTOM, fill=tk.X, expand=1)
@@ -62,7 +66,12 @@ class MainWindow(tk.Tk):
         self.line_gutter.pack(side=tk.LEFT, fill=tk.Y)
         self.text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
+        # set up event handling
         self.bind_events()
+
+        # set focus to the text area and update line/column
+        self.text_area.focus_set()
+        self.update_index()
 
     def bind_events(self):
         # scroll text area
@@ -104,6 +113,38 @@ class MainWindow(tk.Tk):
         cursor_line, cursor_col = str(cursor_position).split(".")
 
         self.current_index.set(f"Ln {cursor_line}, Col {int(cursor_col) + 1}")
+
+    def create_menu_bar(self):
+        # without re-implementing the Menu object, properties like `background` are managed by the
+        # Window Manager and can not be changed.
+        menu = tk.Menu(self, tearoff=False)
+
+        # Create "File" option
+        file_menu = tk.Menu(self, tearoff=False)  # "tearoff" allows the menu to pop-out of the main window
+        file_menu.add_command(label="New Window")
+        file_menu.add_command(label="New File")
+        file_menu.add_command(label="Open File...")
+        file_menu.add_command(label="Open Folder...")
+        file_menu.add_separator()
+        file_menu.add_command(label="Settings")
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit")
+        file_menu.add_command(label="Close All Tabs")
+
+        # Create "Edit" option
+        edit_menu = tk.Menu(self, tearoff=False)
+        edit_menu.add_command(label="Undo")
+        edit_menu.add_command(label="Redo")
+        edit_menu.add_separator()
+        edit_menu.add_command(label="Cut")
+        edit_menu.add_command(label="Copy")
+        edit_menu.add_command(label="Paste")
+        edit_menu.add_command(label="Select All")
+
+        # Add menus to main menu bar
+        menu.add_cascade(label="File", menu=file_menu)
+        menu.add_cascade(label="Edit", menu=edit_menu)
+        return menu
 
 
 if __name__ == "__main__":
