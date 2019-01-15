@@ -56,15 +56,19 @@ class MainWindow(tk.Tk):
         )
 
         # menu bar
-        self.menu = self.create_menu_bar()
-        self.configure(menu=self.menu)
+        self.menu_bar = self.create_menu_bar()
+        self.configure(menu=self.menu_bar)
+
+        # context menu
+        self.context_menu = self.create_context_menu()
 
         # do element packing
-        self.status_bar.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
-        self.status_bar_text.pack(side=tk.BOTTOM, fill=tk.X, expand=1)
+        # status_bar **must** come before text_area to pack correctly
+        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.line_gutter.pack(side=tk.LEFT, fill=tk.Y)
         self.text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        self.status_bar_text.pack(side=tk.BOTTOM, fill=tk.X, expand=1)
 
         # set up event handling
         self.bind_events()
@@ -90,6 +94,14 @@ class MainWindow(tk.Tk):
         # status bar events
         self.text_area.bind("<KeyRelease>", self.update_index)  # update line and column
         self.text_area.bind("<ButtonRelease-1>", self.update_index)
+
+        # context menu event
+        self.text_area.bind("<Button-3>", self.show_context_menu)
+
+    def show_context_menu(self, event):
+        x = self.winfo_x() + self.text_area.winfo_x() + event.x
+        y = self.winfo_y() + self.text_area.winfo_y() + event.y
+        self.context_menu.post(x, y)
 
     def scroll_text(self, *args):
         if len(args) > 1:
@@ -144,6 +156,17 @@ class MainWindow(tk.Tk):
         # Add menus to main menu bar
         menu.add_cascade(label="File", menu=file_menu)
         menu.add_cascade(label="Edit", menu=edit_menu)
+        return menu
+
+    def create_context_menu(self):
+        menu = tk.Menu(self, tearoff=False)
+        menu.add_command(label="Undo")
+        menu.add_command(label="Redo")
+        menu.add_separator()
+        menu.add_command(label="Cut")
+        menu.add_command(label="Copy")
+        menu.add_command(label="Paste")
+        menu.add_command(label="Select All")
         return menu
 
 
