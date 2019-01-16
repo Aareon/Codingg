@@ -7,13 +7,14 @@ from ui.linegutter import LineGutter
 
 SRC_PATH = Path(__file__).parent.parent
 RESOURCES_PATH = SRC_PATH.joinpath("./resources/")
-
+print(RESOURCES_PATH)
 
 class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
 
         window_icon_path = RESOURCES_PATH.joinpath("icon.png").resolve()
+        print(window_icon_path)
         self.call("wm", "iconphoto", self._w, tk.Image("photo", file=window_icon_path))
 
         self.title("untitled — Codingg")
@@ -114,6 +115,7 @@ class MainWindow(tk.Tk):
             self.text_area.insert(start, char)
             self.text_area.delete(start, end)  # remove the newline character that defines the next line
             self.line_gutter.delete_line_num()
+            return "break"
 
     def show_context_menu(self, event):
         x = self.winfo_x() + self.text_area.winfo_x() + event.x
