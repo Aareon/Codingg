@@ -98,6 +98,23 @@ class MainWindow(tk.Tk):
         # context menu event
         self.text_area.bind("<Button-3>", self.show_context_menu)
 
+        # handle special text area events
+        self.text_area.bind("<BackSpace>", self.on_key_backspace)
+
+    def on_key_backspace(self, event=None):
+        line, col = self.get_current_line_column()
+
+        if col == "0" and line != "1":
+            start, end = f"{int(line) - 1}.{tk.END}", f"{line}.0"
+
+            # deleting the line will also delete the last character in the above line. We'll need to replace it.
+            char = self.text_area.get(f'{int(line)-1}.{tk.END}-1c', end).replace("\n", "")
+
+            # basically double the regular character that will be accidentally removed so that it will stay there
+            self.text_area.insert(start, char)
+            self.text_area.delete(start, end)  # remove the newline character that defines the next line
+            self.line_gutter.delete_line_num()
+
     def show_context_menu(self, event):
         x = self.winfo_x() + self.text_area.winfo_x() + event.x
         y = self.winfo_y() + self.text_area.winfo_y() + event.y
@@ -120,11 +137,14 @@ class MainWindow(tk.Tk):
             self.text_area.yview_scroll(int(move), "units")
             self.line_gutter.yview_scroll(int(move), "units")
 
-    def update_index(self, event=None):
+    def get_current_line_column(self):
         cursor_position = self.text_area.index(tk.INSERT)
-        cursor_line, cursor_col = str(cursor_position).split(".")
+        line, col = str(cursor_position).split(".")
+        return line, col
 
-        self.current_index.set(f"Ln {cursor_line}, Col {int(cursor_col) + 1}")
+    def update_index(self, event=None):
+        line, col = self.get_current_line_column()
+        self.current_index.set(f"Ln {line}, Col {int(col) + 1}")
 
     def create_menu_bar(self):
         # without re-implementing the Menu object, properties like `background` are managed by the
