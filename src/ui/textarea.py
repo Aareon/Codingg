@@ -3,47 +3,39 @@ import tkinter as tk
 
 class TextArea(tk.Text):
     def __init__(self, master, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(master, **kwargs)
 
         self.master = master
 
-        self.config(wrap=tk.WORD)
+        self.config(wrap=tk.NONE)
 
-        self.bind_events()
+        self._orig = f"{self._w}_orig"
+        self.tk.call("rename", self._w, self._orig)
+        self.tk.createcommand(self._w, self.event_proxy)
 
-    def bind_events(self):
-        self.bind("<Control-a>", self.select_all)
-        self.bind("<Control-c>", self.copy)
-        self.bind("<Control-v>", self.paste)
-        self.bind("<Control-x>", self.cut)
-        self.bind("<Control-y>", self.redo)
-        self.bind("<Control-z>", self.undo)
-        self.bind("<Control-g>", self.print_num_lines)
-        # self.bind("<BackSpace>", self.on_key_backspace)
+    def event_proxy(self, *args):
+        # let the actual widget perform the requested action
+        cmd = (self._orig, *args)
+        result = None
 
-    def cut(self, event=None):
-        self.event_generate("<<Cut>>")
+        # if we just ignore the exception, everything works out fine apparently
+        try:
+            result = self.tk.call(cmd)
+        except tk.TclError as exc:
+            if str(exc) == "text doesn't contain any characters tagged with \"sel\"":
+                pass
 
-    def copy(self, event=None):
-        print("Fired")
-        self.event_generate("<<Copy>>")
+        # generate an event if something was added or deleted,
+        # or the cursor position changed
+        if (
+            args[0] in ("insert", "replace", "delete")
+            or args[0:3] == ("mark", "set", "insert")
+            or args[0:2] == ("xview", "moveto")
+            or args[0:2] == ("xview", "scroll")
+            or args[0:2] == ("yview", "moveto")
+            or args[0:2] == ("yview", "scroll")
+        ):
+            self.event_generate("<<Change>>", when="tail")
 
-    def paste(self, event=None):
-        self.event_generate("<<Paste>>")
-        return "break"
-
-    def undo(self, event=None):
-        self.event_generate("<<Undo>>")
-        return "break"  # used to prevent events already handled by the `Text` widget from firing
-
-    def redo(self, event=None):
-        self.event_generate("<<Redo>>")
-        return "break"
-
-    def select_all(self, event=None):
-        self.tag_add("sel", 1.0, tk.END)
-
-    def print_num_lines(self, event=None):
-        final_index = str(self.index(tk.END))
-        num_lines: str = final_index.split(".")[0]
-        print(f"Number of lines: {int(num_lines) - 1}")
+        # return what the actual widget returned
+        return result

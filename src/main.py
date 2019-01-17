@@ -7,14 +7,13 @@ from ui.linegutter import LineGutter
 
 SRC_PATH = Path(__file__).parent.parent
 RESOURCES_PATH = SRC_PATH.joinpath("./resources/")
-print(RESOURCES_PATH)
+
 
 class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
 
         window_icon_path = RESOURCES_PATH.joinpath("icon.png").resolve()
-        print(window_icon_path)
         self.call("wm", "iconphoto", self._w, tk.Image("photo", file=window_icon_path))
 
         self.title("untitled — Codingg")
@@ -43,7 +42,8 @@ class MainWindow(tk.Tk):
             bg="#282c34",
             fg="#4b5364",
             borderwidth=0,
-            width=1
+            highlightthickness=0,
+            width=30
         )
 
         # status bar
@@ -74,18 +74,15 @@ class MainWindow(tk.Tk):
         # set up event handling
         self.bind_events()
 
-        # set focus to the text area and update line/column
+        # set focus to the text_area area and update line/column
         self.text_area.focus_set()
         self.update_index()
 
     def bind_events(self):
-        # scroll text area
+        # scroll text_area area
         self.text_area.bind("<MouseWheel>", self.scroll_text)
         self.text_area.bind("<Button-4>", self.scroll_text)
         self.text_area.bind("<Button-5>", self.scroll_text)
-
-        # update line gutter
-        # self.text_area.bind("<KeyPress>", self.line_gutter.on_keypress)
 
         # disable scrolling and selection in line gutter
         self.line_gutter.bind("<MouseWheel>", lambda event: "break")
@@ -99,24 +96,6 @@ class MainWindow(tk.Tk):
         # context menu event
         self.text_area.bind("<Button-3>", self.show_context_menu)
 
-        # handle special text area events
-        self.text_area.bind("<BackSpace>", self.on_key_backspace)
-
-    def on_key_backspace(self, event=None):
-        line, col = self.get_current_line_column()
-
-        if col == "0" and line != "1":
-            start, end = f"{int(line) - 1}.{tk.END}", f"{line}.0"
-
-            # deleting the line will also delete the last character in the above line. We'll need to replace it.
-            char = self.text_area.get(f'{int(line)-1}.{tk.END}-1c', end).replace("\n", "")
-
-            # basically double the regular character that will be accidentally removed so that it will stay there
-            self.text_area.insert(start, char)
-            self.text_area.delete(start, end)  # remove the newline character that defines the next line
-            self.line_gutter.delete_line_num()
-            return "break"
-
     def show_context_menu(self, event):
         x = self.winfo_x() + self.text_area.winfo_x() + event.x
         y = self.winfo_y() + self.text_area.winfo_y() + event.y
@@ -125,7 +104,6 @@ class MainWindow(tk.Tk):
     def scroll_text(self, *args):
         if len(args) > 1:
             self.text_area.yview_moveto(args[1])
-            self.line_gutter.yview_moveto(args[1])
         else:
             event = args[0]
             if event.delta:
@@ -137,7 +115,6 @@ class MainWindow(tk.Tk):
                     move = -1
 
             self.text_area.yview_scroll(int(move), "units")
-            self.line_gutter.yview_scroll(int(move), "units")
 
     def get_current_line_column(self):
         cursor_position = self.text_area.index(tk.INSERT)
