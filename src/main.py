@@ -13,7 +13,7 @@ class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        window_icon_path = RESOURCES_PATH.joinpath("icon.png").resolve()
+        window_icon_path = RESOURCES_PATH.joinpath("favicon.png").resolve()
         self.call("wm", "iconphoto", self._w, tk.Image("photo", file=window_icon_path))
 
         self.title("untitled — Codingg")
@@ -24,26 +24,24 @@ class MainWindow(tk.Tk):
             fg="#abb2bf",
             insertbackground="#528bff",
             borderwidth=0,
-            undo=True
+            undo=True,
         )
 
         # TODO : re-implement the ttk style for scrollbar to give us more control
-        self.scrollbar = ttk.Scrollbar(
-            orient="vertical",
-            command=self.scroll_text
+        self.scrollbar = ttk.Scrollbar(orient="vertical", command=self.scroll_text)
+
+        self.text_area.configure(
+            undo=True, yscrollcommand=self.scrollbar.set, maxundo=-1
         )
 
-        self.text_area.configure(yscrollcommand=self.scrollbar.set)
-
-        # line gutter
         self.line_gutter = LineGutter(
             self,
             self.text_area,
             bg="#282c34",
-            fg="#4b5364",
+            fg="#4b5364",  # `fg` refers to the text widget within the LineGutter Canvas
             borderwidth=0,
             highlightthickness=0,
-            width=30
+            width=30,
         )
 
         # status bar
@@ -53,7 +51,7 @@ class MainWindow(tk.Tk):
             self.status_bar,
             bg=self.status_bar["bg"],
             fg=self.status_bar["fg"],
-            textvar=self.current_index
+            textvar=self.current_index,
         )
 
         # menu bar
@@ -79,16 +77,6 @@ class MainWindow(tk.Tk):
         self.update_index()
 
     def bind_events(self):
-        # scroll text_area area
-        self.text_area.bind("<MouseWheel>", self.scroll_text)
-        self.text_area.bind("<Button-4>", self.scroll_text)
-        self.text_area.bind("<Button-5>", self.scroll_text)
-
-        # disable scrolling and selection in line gutter
-        self.line_gutter.bind("<MouseWheel>", lambda event: "break")
-        self.line_gutter.bind("<Button-4>", lambda event: "break")
-        self.line_gutter.bind("<Button-5>", lambda event: "break")
-
         # status bar events
         self.text_area.bind("<KeyRelease>", self.update_index)  # update line and column
         self.text_area.bind("<ButtonRelease-1>", self.update_index)
@@ -131,7 +119,9 @@ class MainWindow(tk.Tk):
         menu = tk.Menu(self, tearoff=False)
 
         # Create "File" option
-        file_menu = tk.Menu(self, tearoff=False)  # "tearoff" allows the menu to pop-out of the main window
+        file_menu = tk.Menu(
+            self, tearoff=False
+        )  # "tearoff" allows the menu to pop-out of the main window
         file_menu.add_command(label="New Window")
         file_menu.add_command(label="New File")
         file_menu.add_command(label="Open File...")
@@ -144,13 +134,26 @@ class MainWindow(tk.Tk):
 
         # Create "Edit" option
         edit_menu = tk.Menu(self, tearoff=False)
-        edit_menu.add_command(label="Undo")
-        edit_menu.add_command(label="Redo")
+        edit_menu.add_command(
+            label="Undo", command=lambda: self.text_area.event_generate("<<Undo>>")
+        )
+        edit_menu.add_command(
+            label="Redo", command=lambda: self.text_area.event_generate("<<Redo>>")
+        )
         edit_menu.add_separator()
-        edit_menu.add_command(label="Cut")
-        edit_menu.add_command(label="Copy")
-        edit_menu.add_command(label="Paste")
-        edit_menu.add_command(label="Select All")
+        edit_menu.add_command(
+            label="Cut", command=lambda: self.text_area.event_generate("<<Cut>>")
+        )
+        edit_menu.add_command(
+            label="Copy", command=lambda: self.text_area.event_generate("<<Copy>>")
+        )
+        edit_menu.add_command(
+            label="Paste", command=lambda: self.text_area.event_generate("<<Paste>>")
+        )
+        edit_menu.add_command(
+            label="Select All",
+            command=lambda: self.text_area.event_generate("<<SelectAll>>"),
+        )
 
         # Add menus to main menu bar
         menu.add_cascade(label="File", menu=file_menu)
@@ -159,13 +162,26 @@ class MainWindow(tk.Tk):
 
     def create_context_menu(self):
         menu = tk.Menu(self, tearoff=False)
-        menu.add_command(label="Undo")
-        menu.add_command(label="Redo")
+        menu.add_command(
+            label="Undo", command=lambda: self.text_area.event_generate("<<Undo>>")
+        )
+        menu.add_command(
+            label="Redo", command=lambda: self.text_area.event_generate("<<Redo>>")
+        )
         menu.add_separator()
-        menu.add_command(label="Cut")
-        menu.add_command(label="Copy")
-        menu.add_command(label="Paste")
-        menu.add_command(label="Select All")
+        menu.add_command(
+            label="Cut", command=lambda: self.text_area.event_generate("<<Cut>>")
+        )
+        menu.add_command(
+            label="Copy", command=lambda: self.text_area.event_generate("<<Copy>>")
+        )
+        menu.add_command(
+            label="Paste", command=lambda: self.text_area.event_generate("<<Paste>>")
+        )
+        menu.add_command(
+            label="Select All",
+            command=lambda: self.text_area.event_generate("<<SelectAll>>"),
+        )
         return menu
 
 
