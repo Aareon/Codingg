@@ -30,10 +30,6 @@ class MainWindow(tk.Tk):
         # TODO : re-implement the ttk style for scrollbar to give us more control
         self.scrollbar = ttk.Scrollbar(orient="vertical", command=self.scroll_text)
 
-        self.text_area.configure(
-            undo=True, yscrollcommand=self.scrollbar.set, maxundo=-1
-        )
-
         self.line_gutter = LineGutter(
             self,
             self.text_area,

@@ -7,7 +7,9 @@ class TextArea(tk.Text):
 
         self.master = master
 
-        self.config(wrap=tk.NONE)
+        self.config(
+            wrap=tk.NONE, undo=True, yscrollcommand=self.scrollbar.set, maxundo=-1
+        )
 
         self._orig = f"{self._w}_orig"
         self.tk.call("rename", self._w, self._orig)
@@ -22,7 +24,7 @@ class TextArea(tk.Text):
         try:
             result = self.tk.call(cmd)
         except tk.TclError as exc:
-            if str(exc) == "text doesn't contain any characters tagged with \"sel\"":
+            if str(exc) == 'text doesn\'t contain any characters tagged with "sel"':
                 pass
 
         # generate an event if something was added or deleted,
