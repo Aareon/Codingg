@@ -8,7 +8,10 @@ class TextArea(tk.Text):
         self.master = master
 
         self.config(
-            wrap=tk.NONE, undo=True, yscrollcommand=self.scrollbar.set, maxundo=-1
+            wrap=tk.NONE,
+            undo=True,
+            yscrollcommand=self.master.scrollbar.set,
+            maxundo=-1,
         )
 
         self._orig = f"{self._w}_orig"

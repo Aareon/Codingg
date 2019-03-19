@@ -18,6 +18,9 @@ class MainWindow(tk.Tk):
 
         self.title("untitled — Codingg")
 
+        # TODO : re-implement the ttk style for scrollbar to give us more control
+        self.scrollbar = ttk.Scrollbar(orient="vertical", command=self.scroll_text)
+
         self.text_area = TextArea(
             self,
             bg="#282c34",
@@ -26,9 +29,6 @@ class MainWindow(tk.Tk):
             borderwidth=0,
             undo=True,
         )
-
-        # TODO : re-implement the ttk style for scrollbar to give us more control
-        self.scrollbar = ttk.Scrollbar(orient="vertical", command=self.scroll_text)
 
         self.line_gutter = LineGutter(
             self,
