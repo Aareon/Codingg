@@ -21,12 +21,16 @@ class MainWindow(tk.Tk):
         # TODO : re-implement the ttk style for scrollbar to give us more control
         self.scrollbar = ttk.Scrollbar(orient="vertical", command=self.scroll_text)
 
+        # The `highlightthickness` option used below ensures that a border won't
+        # be added to the sides of each widget when the window loses focus.
+        # This behavior was only noticed on Linux machines (Arch/Ubuntu 18.04).
         self.text_area = TextArea(
             self,
             bg="#282c34",
             fg="#abb2bf",
             insertbackground="#528bff",
             borderwidth=0,
+            highlightthickness=0,  # disable highlighting this
             undo=True,
         )
 
@@ -42,7 +46,9 @@ class MainWindow(tk.Tk):
 
         # status bar
         self.current_index = tk.StringVar()
-        self.status_bar = tk.Text(self, bg="#21252b", fg="#9da5b4", borderwidth=0)
+        self.status_bar = tk.Text(
+            self, bg="#21252b", fg="#9da5b4", borderwidth=0, highlightthickness=0
+        )
         self.status_bar_text = tk.Label(
             self.status_bar,
             bg=self.status_bar["bg"],
