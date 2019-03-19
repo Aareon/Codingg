@@ -5,8 +5,8 @@ from pathlib import Path
 from ui.textarea import TextArea
 from ui.linegutter import LineGutter
 
-SRC_PATH = Path(__file__).parent.parent
-RESOURCES_PATH = SRC_PATH.joinpath("./resources/")
+SRC_PATH = Path(__file__).parent
+RESOURCES_PATH = SRC_PATH.joinpath("../resources/")
 
 
 class MainWindow(tk.Tk):
