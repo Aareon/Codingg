@@ -13,6 +13,8 @@ class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
 
+        self.lift()
+
         window_icon_path = RESOURCES_PATH.joinpath("favicon.png").resolve()
         self.call("wm", "iconphoto", self._w, tk.Image("photo", file=window_icon_path))
 
