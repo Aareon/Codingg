@@ -4,6 +4,7 @@ from tkinter import filedialog, ttk
 
 from ui.linegutter import LineGutter
 from ui.textarea import TextArea
+from ui.filetab import FileTab
 
 SRC_PATH = Path(__file__).parent.resolve()
 RESOURCES_PATH = SRC_PATH.joinpath("../resources/").resolve()
@@ -17,44 +18,6 @@ DEFAULT_EDITOR_CONFIG = {
 
 WELCOME_MESSAGE = """Welcome to Codingg!
 This is a simple text editor written in Python using Tkinter."""
-
-
-class FileTab(tk.Frame):
-    def __init__(self, master, **kwargs):
-        super().__init__(master, **kwargs)
-
-        COLOR_1 = "#282c34"
-        COLOR_2 = "#3e4451"
-        COLOR_6 = "#98c379"
-
-        # Import the Notebook.tab element from the default theme
-        self.styler = ttk.Style()
-        try:
-            self.styler.element_create("gg.TNotebook.tab", "from", "default")
-        except tk.TclError:
-            # gg.TNotebook.tab already exists
-            pass
-
-        # Redefine the TNotebook Tab layout to use the new element
-        # fmt: off
-        self.styler.layout("TNotebook.Tab",
-            [('Plain.Notebook.tab', {'children':
-                [('Notebook.padding', {'side': 'top', 'children':
-                    [('Notebook.focus', {'side': 'top', 'children':
-                        [('Notebook.label', {'side': 'top', 'sticky': ''})],
-                    'sticky': 'nswe'})],
-                'sticky': 'nswe'})],
-            'sticky': 'nswe'})])
-        self.styler.configure("TNotebook", background=COLOR_1, borderwidth=0)
-        self.styler.configure("TNotebook.Tab", background="green", foreground="#282c34",
-                                            lightcolor=COLOR_6, borderwidth=2)
-        self.styler.configure("TFrame", background=COLOR_1, foreground=COLOR_2, borderwidth=0)
-        self.styler.map("TNotebook.Tab", background=[("selected", "green"), ("disabled", "red")])
-        # fmt: on
-
-        self.text_area = None
-        self.line_gutter = None
-        self.scrollbar = None
 
 
 class MainWindow(tk.Tk):
@@ -100,13 +63,13 @@ class MainWindow(tk.Tk):
         # configure notebook style
         notebook_style = ttk.Style()
         notebook_style.configure("TNotebook", background="#282c34")
-        notebook_style.configure(
+        """notebook_style.configure(
             "TNotebook.Tab", background="#282c34", foreground="#abb2bf", height=6
         )
         notebook_style.map(
             "TNotebook.Tab",
             background=[("selected", "#282c34"), ("disabled", "#282c34")],
-        )
+        )"""
 
         # create notebook for tabs
         self.notebook = ttk.Notebook(self, style="gg.TNotebook")
@@ -171,7 +134,7 @@ class MainWindow(tk.Tk):
 
         self.open_tabs.append(tab)
 
-        tab.text_area.insert("1.0", text or fp.read_text())
+        tab.text_area.insert("1.0", text or fp.read_text(encoding="utf-8"))
 
         # set focus to the text_area area and update line/column
         tab.text_area.focus_set()
