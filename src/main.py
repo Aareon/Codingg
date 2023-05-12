@@ -1,12 +1,60 @@
 import tkinter as tk
-from tkinter import ttk
 from pathlib import Path
+from tkinter import filedialog, ttk
 
-from ui.textarea import TextArea
 from ui.linegutter import LineGutter
+from ui.textarea import TextArea
 
-SRC_PATH = Path(__file__).parent
-RESOURCES_PATH = SRC_PATH.joinpath("../resources/")
+SRC_PATH = Path(__file__).parent.resolve()
+RESOURCES_PATH = SRC_PATH.joinpath("../resources/").resolve()
+
+DEFAULT_EDITOR_CONFIG = {
+    "font": ("Consolas", 12),
+    "tabsize": 4,
+    "tab-to-spaces": True,
+    "show-welcome": True,
+}
+
+WELCOME_MESSAGE = """Welcome to Codingg!
+This is a simple text editor written in Python using Tkinter."""
+
+
+class FileTab(tk.Frame):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+
+        COLOR_1 = "#282c34"
+        COLOR_2 = "#3e4451"
+        COLOR_6 = "#98c379"
+
+        # Import the Notebook.tab element from the default theme
+        self.styler = ttk.Style()
+        try:
+            self.styler.element_create("gg.TNotebook.tab", "from", "default")
+        except tk.TclError:
+            # gg.TNotebook.tab already exists
+            pass
+
+        # Redefine the TNotebook Tab layout to use the new element
+        # fmt: off
+        self.styler.layout("TNotebook.Tab",
+            [('Plain.Notebook.tab', {'children':
+                [('Notebook.padding', {'side': 'top', 'children':
+                    [('Notebook.focus', {'side': 'top', 'children':
+                        [('Notebook.label', {'side': 'top', 'sticky': ''})],
+                    'sticky': 'nswe'})],
+                'sticky': 'nswe'})],
+            'sticky': 'nswe'})])
+        self.styler.configure("TNotebook", background=COLOR_1, borderwidth=0)
+        self.styler.configure("TNotebook.Tab", background="green", foreground="#282c34",
+                                            lightcolor=COLOR_6, borderwidth=2)
+        self.styler.configure("TFrame", background=COLOR_1, foreground=COLOR_2, borderwidth=0)
+        self.styler.map("TNotebook.Tab", background=[("selected", "green"), ("disabled", "red")])
+        # fmt: on
+
+        self.text_area = None
+        self.line_gutter = None
+        self.scrollbar = None
 
 
 class MainWindow(tk.Tk):
@@ -15,36 +63,20 @@ class MainWindow(tk.Tk):
 
         self.lift()
 
+        # set window icon
         window_icon_path = RESOURCES_PATH.joinpath("favicon.png").resolve()
         self.call("wm", "iconphoto", self._w, tk.Image("photo", file=window_icon_path))
 
         self.title("untitled — Codingg")
 
-        # TODO : re-implement the ttk style for scrollbar to give us more control
-        self.scrollbar = ttk.Scrollbar(orient="vertical", command=self.scroll_text)
+        self.background = "#282c34"
+
+        # load config
+        self.editor_config = DEFAULT_EDITOR_CONFIG
 
         # The `highlightthickness` option used below ensures that a border won't
         # be added to the sides of each widget when the window loses focus.
         # This behavior was only noticed on Linux machines (Arch/Ubuntu 18.04).
-        self.text_area = TextArea(
-            self,
-            bg="#282c34",
-            fg="#abb2bf",
-            insertbackground="#528bff",
-            borderwidth=0,
-            highlightthickness=0,  # disable highlighting this
-            undo=True,
-        )
-
-        self.line_gutter = LineGutter(
-            self,
-            self.text_area,
-            bg="#282c34",
-            fg="#4b5364",  # `fg` refers to the text widget within the LineGutter Canvas
-            borderwidth=0,
-            highlightthickness=0,
-            width=30,
-        )
 
         # status bar
         self.current_index = tk.StringVar()
@@ -62,40 +94,141 @@ class MainWindow(tk.Tk):
         self.menu_bar = self.create_menu_bar()
         self.configure(menu=self.menu_bar)
 
+        self.open_tabs = []
+        self.viewing_tab = None
+
+        # configure notebook style
+        notebook_style = ttk.Style()
+        notebook_style.configure("TNotebook", background="#282c34")
+        notebook_style.configure(
+            "TNotebook.Tab", background="#282c34", foreground="#abb2bf", height=6
+        )
+        notebook_style.map(
+            "TNotebook.Tab",
+            background=[("selected", "#282c34"), ("disabled", "#282c34")],
+        )
+
+        # create notebook for tabs
+        self.notebook = ttk.Notebook(self, style="gg.TNotebook")
+        self.notebook.enable_traversal()
+
+        # configure tab style
+        notebook_style = ttk.Style()
+
+        # TODO : re-implement the ttk style for scrollbar to give us more control
+
         # context menu
         self.context_menu = self.create_context_menu()
 
         # do element packing
         # status_bar **must** come before text_area to pack correctly
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.line_gutter.pack(side=tk.LEFT, fill=tk.Y)
-        self.text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
         self.status_bar_text.pack(side=tk.BOTTOM, fill=tk.X, expand=1)
+
+        if self.editor_config["show-welcome"]:
+            self.open_welcome_tab()
 
         # set up event handling
         self.bind_events()
 
-        # set focus to the text_area area and update line/column
-        self.text_area.focus_set()
-        self.update_index()
-
-    def bind_events(self):
+    def bind_new_tab_events(self, tab):
         # status bar events
-        self.text_area.bind("<KeyRelease>", self.update_index)  # update line and column
-        self.text_area.bind("<ButtonRelease-1>", self.update_index)
+        tab.text_area.bind("<KeyRelease>", self.update_index)  # update line and column
+        tab.text_area.bind("<ButtonRelease-1>", self.update_index)
 
         # context menu event
-        self.text_area.bind("<Button-3>", self.show_context_menu)
+        tab.text_area.bind("<Button-3>", self.show_context_menu)
+
+        # handle tab key
+        tab.text_area.bind("<Tab>", self.insert_spaces)
+
+    def open_new_tab(self, fp: Path = None, text: str = None, title: str = "untitled"):
+        tab = FileTab(self.notebook)
+        title = fp.name if fp else title
+        tab.scrollbar = ttk.Scrollbar(tab, orient="vertical", command=self.scroll_text)
+        tab.text_area = TextArea(
+            tab,
+            bg="#282c34",
+            fg="#abb2bf",
+            insertbackground="#528bff",
+            borderwidth=0,
+            highlightthickness=0,  # disable highlighting this
+            undo=True,
+        )
+
+        tab.line_gutter = LineGutter(
+            tab,
+            tab.text_area,
+            bg="#282c34",
+            fg="#4b5364",  # `fg` refers to the text widget within the LineGutter Canvas
+            borderwidth=0,
+            highlightthickness=0,
+            width=30,
+        )
+        self.notebook.add(tab, text=title)
+
+        self.bind_new_tab_events(tab)
+
+        self.open_tabs.append(tab)
+
+        tab.text_area.insert("1.0", text or fp.read_text())
+
+        # set focus to the text_area area and update line/column
+        tab.text_area.focus_set()
+        self.update_index()
+        self.viewing_tab = tab
+
+    def open_welcome_tab(self):
+        self.open_new_tab(title="Welcome to Codingg", text=WELCOME_MESSAGE)
+
+    @property
+    def current_tab(self):
+        print(self.notebook.index("current"))
+        return self.open_tabs[self.notebook.index("current")]
+
+    def handle_tab_changed(self, event):
+        self.viewing_tab.scrollbar.pack_forget()
+        self.viewing_tab.text_area.pack_forget()
+        self.viewing_tab.line_gutter.pack_forget()
+
+        self.viewing_tab = self.current_tab
+        self.viewing_tab.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.notebook.pack(fill=tk.BOTH, expand=1)
+        self.viewing_tab.line_gutter.pack(side=tk.LEFT, fill=tk.Y)
+        self.viewing_tab.text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+
+    def toggle_fullscreen(self, event=None):
+        self.attributes("-fullscreen", not self.attributes("-fullscreen"))
+
+    def bind_events(self):
+        # handle F11 key
+        self.bind("<F11>", self.toggle_fullscreen)
+        self.notebook.bind("<Control-n>", self.open_new_tab)
+        self.notebook.bind("<<NotebookTabChanged>>", self.handle_tab_changed)
+
+    def insert_spaces(self, event):
+        current_tab = self.current_tab
+        if self.editor_config.get(
+            "tab-to-spaces", DEFAULT_EDITOR_CONFIG["tab-to-spaces"]
+        ):
+            current_tab.text_area.insert(
+                tk.INSERT,
+                " " * self.editor_config("tabsize", DEFAULT_EDITOR_CONFIG["tabsize"]),
+            )
+            return "break"
+        else:
+            current_tab.text_area.insert(tk.INSERT, "\t")
+            return "break"
 
     def show_context_menu(self, event):
-        x = self.winfo_x() + self.text_area.winfo_x() + event.x
-        y = self.winfo_y() + self.text_area.winfo_y() + event.y
-        self.context_menu.post(x, y)
+        current_tab = self.current_tab
+        x = self.winfo_x() + current_tab.text_area.winfo_x() + event.x
+        y = self.winfo_y() + current_tab.text_area.winfo_y() + event.y
+        current_tab.context_menu.post(x, y)
 
     def scroll_text(self, *args):
         if len(args) > 1:
-            self.text_area.yview_moveto(args[1])
+            self.current_tab.text_area.yview_moveto(args[1])
         else:
             event = args[0]
             if event.delta:
@@ -109,7 +242,7 @@ class MainWindow(tk.Tk):
             self.text_area.yview_scroll(int(move), "units")
 
     def get_current_line_column(self):
-        cursor_position = self.text_area.index(tk.INSERT)
+        cursor_position = self.current_tab.text_area.index(tk.INSERT)
         line, col = str(cursor_position).split(".")
         return line, col
 
@@ -117,8 +250,37 @@ class MainWindow(tk.Tk):
         line, col = self.get_current_line_column()
         self.current_index.set(f"Ln {line}, Col {int(col) + 1}")
 
+    def open_file(self):
+        fp = filedialog.askopenfilename(
+            filetypes=(
+                ("All files", "*.*"),
+                ("Text files", "*.txt"),
+                ("Python files", "*.py*"),
+                ("Javascript files", "*.js"),
+                ("HTML files", "*.html"),
+                ("CSS files", "*.css"),
+                ("Markdown files", "*.md"),
+                ("PHP files", "*.php"),
+                ("Java files", "*.java"),
+                ("C files", "*.c"),
+                ("C++ files", "*.cpp"),
+                ("C# files", "*.cs"),
+                ("Go files", "*.go"),
+                ("Ruby files", "*.rb"),
+                ("Rust files", "*.rs"),
+                ("Swift files", "*.swift"),
+                ("Lua files", "*.lua"),
+                ("YAML files", "*.yaml"),
+                ("JSON files", "*.json"),
+                ("TOML files", "*.toml"),
+                ("INI files", "*.ini"),
+            )
+        )
+        self.open_new_tab(fp=Path(fp))
+
     def create_menu_bar(self):
-        # without re-implementing the Menu object, properties like `background` are managed by the
+        # without re-implementing the Menu object
+        # properties like `background` are managed by the
         # Window Manager and can not be changed.
         menu = tk.Menu(self, tearoff=False)
 
@@ -128,7 +290,7 @@ class MainWindow(tk.Tk):
         )  # "tearoff" allows the menu to pop-out of the main window
         file_menu.add_command(label="New Window")
         file_menu.add_command(label="New File")
-        file_menu.add_command(label="Open File...")
+        file_menu.add_command(label="Open File...", command=self.open_file)
         file_menu.add_command(label="Open Folder...")
         file_menu.add_separator()
         file_menu.add_command(label="Settings")
@@ -139,24 +301,29 @@ class MainWindow(tk.Tk):
         # Create "Edit" option
         edit_menu = tk.Menu(self, tearoff=False)
         edit_menu.add_command(
-            label="Undo", command=lambda: self.text_area.event_generate("<<Undo>>")
+            label="Undo",
+            command=lambda: self.current_tab.text_area.event_generate("<<Undo>>"),
         )
         edit_menu.add_command(
-            label="Redo", command=lambda: self.text_area.event_generate("<<Redo>>")
+            label="Redo",
+            command=lambda: self.current_tab.text_area.event_generate("<<Redo>>"),
         )
         edit_menu.add_separator()
         edit_menu.add_command(
-            label="Cut", command=lambda: self.text_area.event_generate("<<Cut>>")
+            label="Cut",
+            command=lambda: self.current_tab.text_area.event_generate("<<Cut>>"),
         )
         edit_menu.add_command(
-            label="Copy", command=lambda: self.text_area.event_generate("<<Copy>>")
+            label="Copy",
+            command=lambda: self.current_tab.text_area.event_generate("<<Copy>>"),
         )
         edit_menu.add_command(
-            label="Paste", command=lambda: self.text_area.event_generate("<<Paste>>")
+            label="Paste",
+            command=lambda: self.current_tab.text_area.event_generate("<<Paste>>"),
         )
         edit_menu.add_command(
             label="Select All",
-            command=lambda: self.text_area.event_generate("<<SelectAll>>"),
+            command=lambda: self.current_tab.text_area.event_generate("<<SelectAll>>"),
         )
 
         # Add menus to main menu bar
@@ -167,24 +334,31 @@ class MainWindow(tk.Tk):
     def create_context_menu(self):
         menu = tk.Menu(self, tearoff=False)
         menu.add_command(
-            label="Undo", command=lambda: self.text_area.event_generate("<<Undo>>")
+            label="Undo",
+            command=lambda: self.current_tab.text_area.event_generate(
+                "<<Undo>>"
+            ),  # TOODO: get current tab FIX ME
         )
         menu.add_command(
-            label="Redo", command=lambda: self.text_area.event_generate("<<Redo>>")
+            label="Redo",
+            command=lambda: self.current_tab.text_area.event_generate("<<Redo>>"),
         )
         menu.add_separator()
         menu.add_command(
-            label="Cut", command=lambda: self.text_area.event_generate("<<Cut>>")
+            label="Cut",
+            command=lambda: self.current_tab.text_area.event_generate("<<Cut>>"),
         )
         menu.add_command(
-            label="Copy", command=lambda: self.text_area.event_generate("<<Copy>>")
+            label="Copy",
+            command=lambda: self.current_tab.text_area.event_generate("<<Copy>>"),
         )
         menu.add_command(
-            label="Paste", command=lambda: self.text_area.event_generate("<<Paste>>")
+            label="Paste",
+            command=lambda: self.current_tab.text_area.event_generate("<<Paste>>"),
         )
         menu.add_command(
             label="Select All",
-            command=lambda: self.text_area.event_generate("<<SelectAll>>"),
+            command=lambda: self.current_tab.text_area.event_generate("<<SelectAll>>"),
         )
         return menu
 
