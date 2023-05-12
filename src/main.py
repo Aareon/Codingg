@@ -60,23 +60,9 @@ class MainWindow(tk.Tk):
         self.open_tabs = []
         self.viewing_tab = None
 
-        # configure notebook style
-        notebook_style = ttk.Style()
-        notebook_style.configure("TNotebook", background="#282c34")
-        """notebook_style.configure(
-            "TNotebook.Tab", background="#282c34", foreground="#abb2bf", height=6
-        )
-        notebook_style.map(
-            "TNotebook.Tab",
-            background=[("selected", "#282c34"), ("disabled", "#282c34")],
-        )"""
-
         # create notebook for tabs
-        self.notebook = ttk.Notebook(self, style="gg.TNotebook")
+        self.notebook = ttk.Notebook(self, style="TNotebook")
         self.notebook.enable_traversal()
-
-        # configure tab style
-        notebook_style = ttk.Style()
 
         # TODO : re-implement the ttk style for scrollbar to give us more control
 
@@ -137,6 +123,7 @@ class MainWindow(tk.Tk):
         tab.text_area.insert("1.0", text or fp.read_text(encoding="utf-8"))
 
         # set focus to the text_area area and update line/column
+        self.notebook.select(len(self.open_tabs) - 1)
         tab.text_area.focus_set()
         self.update_index()
         self.viewing_tab = tab
@@ -146,7 +133,6 @@ class MainWindow(tk.Tk):
 
     @property
     def current_tab(self):
-        print(self.notebook.index("current"))
         return self.open_tabs[self.notebook.index("current")]
 
     def handle_tab_changed(self, event):
@@ -166,7 +152,7 @@ class MainWindow(tk.Tk):
     def bind_events(self):
         # handle F11 key
         self.bind("<F11>", self.toggle_fullscreen)
-        self.notebook.bind("<Control-n>", self.open_new_tab)
+        self.bind("<Control_L>n", lambda e: self.open_new_tab(text="Open new file or select a language.\nStart typing and save to create an new file."))
         self.notebook.bind("<<NotebookTabChanged>>", self.handle_tab_changed)
 
     def insert_spaces(self, event):
