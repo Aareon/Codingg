@@ -20,16 +20,16 @@ class FileTab(tk.Frame):
 
         # Redefine the TNotebook Tab layout to use the new element
         # fmt: off
-        self.styler.layout("TNotebook.Tab",
-            [('TNotebook.Tab', {'children':
-                [('TNotebook.padding', {'side': 'top', 'children':
-                    [('TNotebook.focus', {'side': 'top', 'children':
-                        [('TNotebook.label', {'side': 'top', 'sticky': ''})],
+        self.styler.layout("CustomNotebook.Tab",
+            [('CustomNotebook.Tab', {'children':
+                [('CustomNotebook.padding', {'side': 'top', 'children':
+                    [('CustomNotebook.focus', {'side': 'top', 'children':
+                        [('CustomNotebook.label', {'side': 'top', 'sticky': ''})],
                     'sticky': 'nswe'})],
                 'sticky': 'nswe'})],
             'sticky': 'nswe'})])
-        self.styler.configure("TNotebook", background="#282c34", borderwidth=0)
-        self.styler.configure("TNotebook.Tab", background="#282c34", foreground="#abb2bf", borderwidth=2)
+        self.styler.configure("CustomNotebook", background="#282c34", borderwidth=0)
+        self.styler.configure("CustomNotebook.Tab", background="#282c34", foreground="#abb2bf", borderwidth=2)
         self.styler.configure("TFrame", background="#282c34", foreground="#282c34", borderwidth=0)
-        self.styler.map("TNotebook.Tab", background=[("selected", "green"), ("disabled", "red")])
+        self.styler.map("CustomNotebook.Tab", background=[("selected", "green"), ("disabled", "red")])
         # fmt: on
