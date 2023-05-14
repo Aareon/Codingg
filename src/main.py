@@ -5,6 +5,7 @@ from tkinter import filedialog, ttk
 from ui.linegutter import LineGutter
 from ui.textarea import TextArea
 from ui.filetab import FileTab
+from ui.notebook import CustomNotebook
 
 SRC_PATH = Path(__file__).parent.resolve()
 RESOURCES_PATH = SRC_PATH.joinpath("../resources/").resolve()
@@ -61,7 +62,7 @@ class MainWindow(tk.Tk):
         self.viewing_tab = None
 
         # create notebook for tabs
-        self.notebook = ttk.Notebook(self, style="TNotebook")
+        self.notebook = CustomNotebook(self, style="TNotebook")
         self.notebook.enable_traversal()
 
         # TODO : re-implement the ttk style for scrollbar to give us more control
