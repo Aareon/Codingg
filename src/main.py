@@ -62,8 +62,8 @@ class MainWindow(tk.Tk):
         self.viewing_tab = None
 
         # create notebook for tabs
-        self.notebook = CustomNotebook(self, style="TNotebook")
-        self.notebook.enable_traversal()
+        self.notebook = CustomNotebook(self)
+        #self.notebook.enable_traversal()
 
         # TODO : re-implement the ttk style for scrollbar to give us more control
 
@@ -143,7 +143,7 @@ class MainWindow(tk.Tk):
 
         self.viewing_tab = self.current_tab
         self.viewing_tab.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.notebook.pack(fill=tk.BOTH, expand=1)
+        self.notebook.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self.viewing_tab.line_gutter.pack(side=tk.LEFT, fill=tk.Y)
         self.viewing_tab.text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 

@@ -1,5 +1,28 @@
 import tkinter as tk
 from tkinter import ttk
+from PIL import Image
+import base64
+from io import BytesIO
+from pathlib import Path
+
+RES_PATH = Path(__file__).parent.parent.parent / "resources"
+
+CLOSE_ICON_SIZE = 20
+
+image = Image.open(RES_PATH / "close.png").resize((CLOSE_ICON_SIZE, CLOSE_ICON_SIZE))
+buffered = BytesIO()
+image.save(buffered, format="PNG")
+close_img = base64.b64encode(buffered.getvalue())
+
+image = Image.open(RES_PATH / "close_focus.png").resize((CLOSE_ICON_SIZE, CLOSE_ICON_SIZE))
+buffered = BytesIO()
+image.save(buffered, format="PNG")
+close_focus_img = base64.b64encode(buffered.getvalue())
+
+image = Image.open(RES_PATH / "close_press.png").resize((CLOSE_ICON_SIZE, CLOSE_ICON_SIZE))
+buffered = BytesIO()
+image.save(buffered, format="PNG")
+close_press_img = base64.b64encode(buffered.getvalue())
 
 
 class CustomNotebook(ttk.Notebook):
@@ -7,7 +30,7 @@ class CustomNotebook(ttk.Notebook):
 
     __initialized = False
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, background="#282c34", **kwargs):
         if not self.__initialized:
             self.__initialize_custom_style()
             self.__inititialized = True
@@ -19,7 +42,7 @@ class CustomNotebook(ttk.Notebook):
         except tk.TclError:
             # CustomNotebook.tab already exists
             pass
-        self.styler.configure("CustomNotebook", background="#282c34")
+        self.styler.configure("CustomNotebook.Tab", background=background)
         kwargs["style"] = "CustomNotebook"
         ttk.Notebook.__init__(self, *args, **kwargs)
 
@@ -63,26 +86,15 @@ class CustomNotebook(ttk.Notebook):
         self.images = (
             tk.PhotoImage(
                 "img_close",
-                data="""
-                R0lGODlhCAAIAMIBAAAAADs7O4+Pj9nZ2Ts7Ozs7Ozs7Ozs7OyH+EUNyZWF0ZWQg
-                d2l0aCBHSU1QACH5BAEKAAQALAAAAAAIAAgAAAMVGDBEA0qNJyGw7AmxmuaZhWEU
-                5kEJADs=
-                """,
+                data=close_img,
             ),
             tk.PhotoImage(
                 "img_closeactive",
-                data="""
-                R0lGODlhCAAIAMIEAAAAAP/SAP/bNNnZ2cbGxsbGxsbGxsbGxiH5BAEKAAQALAAA
-                AAAIAAgAAAMVGDBEA0qNJyGw7AmxmuaZhWEU5kEJADs=
-                """,
+                data=close_focus_img,
             ),
             tk.PhotoImage(
                 "img_closepressed",
-                data="""
-                R0lGODlhCAAIAMIEAAAAAOUqKv9mZtnZ2Ts7Ozs7Ozs7Ozs7OyH+EUNyZWF0ZWQg
-                d2l0aCBHSU1QACH5BAEKAAQALAAAAAAIAAgAAAMVGDBEA0qNJyGw7AmxmuaZhWEU
-                5kEJADs=
-            """,
+                data=close_press_img,
             ),
         )
 
@@ -135,3 +147,16 @@ class CustomNotebook(ttk.Notebook):
                 )
             ],
         )
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+
+    notebook = CustomNotebook(width=200, height=200)
+    notebook.pack(side="top", fill="both", expand=True)
+
+    for color in ("red", "orange", "green", "blue", "violet"):
+        frame = tk.Frame(notebook, background=color)
+        notebook.add(frame, text=color)
+
+    root.mainloop()

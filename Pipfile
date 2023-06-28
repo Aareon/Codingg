@@ -8,7 +8,7 @@ flake8 = "*"
 black = "*"
 
 [packages]
-
+pillow = "*"
 
 [pipenv]
 allow_prereleases = true
