@@ -44,8 +44,15 @@ class MainWindow(tk.Tk):
 
         # status bar
         self.current_index = tk.StringVar()
+        self.indent_style = tk.StringVar(value=f"{'Spaces' if self.editor_config['tab-to-spaces'] else 'Tabs'}: {self.editor_config['tabsize']}")
         self.status_bar = tk.Text(
             self, bg="#21252b", fg="#9da5b4", borderwidth=0, highlightthickness=0
+        )
+        self.status_bar_indent = tk.Label(
+            self.status_bar,
+            bg=self.status_bar["bg"],
+            fg=self.status_bar["fg"],
+            textvar=self.indent_style,
         )
         self.status_bar_text = tk.Label(
             self.status_bar,
@@ -73,7 +80,8 @@ class MainWindow(tk.Tk):
         # do element packing
         # status_bar **must** come before text_area to pack correctly
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.status_bar_text.pack(side=tk.BOTTOM, fill=tk.X, expand=1)
+        self.status_bar_text.pack(side=tk.RIGHT, fill=tk.X, padx=8)
+        self.status_bar_indent.pack(side=tk.RIGHT, fill=tk.X)
 
         if self.editor_config["show-welcome"]:
             self.open_welcome_tab()
@@ -124,7 +132,10 @@ class MainWindow(tk.Tk):
         tab.text_area.insert("1.0", text or fp.read_text(encoding="utf-8"))
 
         # set focus to the text_area area and update line/column
-        self.notebook.select(len(self.open_tabs) - 1)
+        if len(self.open_tabs) != 1:
+            self.notebook.select(len(self.open_tabs) - 1)
+        else:
+            self.notebook.select(0)
         tab.text_area.focus_set()
         self.update_index()
         self.viewing_tab = tab
@@ -163,7 +174,7 @@ class MainWindow(tk.Tk):
         ):
             current_tab.text_area.insert(
                 tk.INSERT,
-                " " * self.editor_config("tabsize", DEFAULT_EDITOR_CONFIG["tabsize"]),
+                " " * self.editor_config.get("tabsize", DEFAULT_EDITOR_CONFIG["tabsize"]),
             )
             return "break"
         else:
